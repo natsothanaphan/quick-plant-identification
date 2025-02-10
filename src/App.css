@@ -1,0 +1,31 @@
+#root {
+  max-width: 960px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.App {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.preview-img {
+  max-width: 280px;
+  margin: 12px 0;
+}
+
+.error-message {
+  color: firebrick;
+}
+
+.result-container {
+  margin: 24px 0;
+}
+
+.reset-button {
+  margin: 16px 0;
+}
