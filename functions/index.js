@@ -90,11 +90,14 @@ const uploadToStorageAndFirestore = async (uid, filename, filePath, mimeType) =>
   const requestDoc = { 
     filename: storagePath, 
     createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
   const docRef = await db
     .collection('users').doc(uid)
     .collection('requests').add(requestDoc);
   logger.info(`Firestore document created for request: ${docRef.id}`);
+
+  return docRef.id;
 };
 
 const uploadToGemini = async (path, mimeType) => {
@@ -105,6 +108,17 @@ const uploadToGemini = async (path, mimeType) => {
   const file = uploadResult.file;
   logger.info(`Uploaded file ${file.displayName} as: ${file.name}`);
   return file;
+};
+
+const updateFirestore = async (uid, docId, result) => {
+  const docRef = db
+    .collection('users').doc(uid)
+    .collection('requests').doc(docId);
+  await docRef.update({
+    result,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  logger.info(`Firestore document updated for request: ${docId}`);
 };
 
 app.post('/api/identifyPlant', async (req, res) => {
@@ -141,12 +155,13 @@ app.post('/api/identifyPlant', async (req, res) => {
       ],
       generationConfig,
     });
-    const responseText = await result.response.text();
-    logger.info('Gemini AI response received', responseText);
+    const data = JSON.parse(await result.response.text());
+    logger.info('Gemini AI response received', data);
 
-    await backgroundPromise;
+    const docId = await backgroundPromise;
+    await updateFirestore(req.uid, docId, data);
 
-    res.status(200).json(JSON.parse(responseText));
+    res.status(200).json(data);
   } catch (error) {
     logger.error('Error in identifyPlant function:', error);
     res.status(500).json({ error: error.message });

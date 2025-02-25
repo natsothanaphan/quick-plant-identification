@@ -1,0 +1,29 @@
+.auth-form {
+  margin: 16px 0;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-form > div {
+  margin: 8px 0;
+  width: 100%;
+}
+
+.auth-form > div > label {
+  display: block;
+  margin: 4px 0;
+  text-align: left;
+}
+
+.auth-form > div > input {
+  width: 100%;
+  margin: 4px 0;
+  box-sizing: border-box;
+}
+
+.auth-form > button {
+  margin: 24px 0;
+}
