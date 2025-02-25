@@ -2,6 +2,7 @@ require('dotenv').config({ path: ['.env', '.env.default'] });
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getStorage } = require('firebase-admin/storage');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const { onRequest } = require('firebase-functions/v2/https');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -14,6 +15,7 @@ const express = require('express');
 setGlobalOptions({ region: 'asia-southeast1' });
 initializeApp();
 const db = getFirestore();
+const storage = getStorage();
 
 const app = express();
 app.use(express.json());
@@ -76,6 +78,25 @@ const model = genAI.getGenerativeModel({
     'Identify a single plant in the image.\nOutput fields in this order: privateThinkingTrace, scientificName, commonNames, confidenceProb, userExplanation.',
 });
 
+const uploadToStorageAndFirestore = async (uid, filename, filePath, mimeType) => {
+  const bucket = storage.bucket();
+  const storagePath = `${uid}/images/${filename}`;
+  await bucket.upload(filePath, {
+    destination: storagePath,
+    metadata: { contentType: mimeType },
+  });
+  logger.info(`File uploaded to Firebase Storage at ${storagePath}`);
+
+  const requestDoc = { 
+    filename: storagePath, 
+    createdAt: FieldValue.serverTimestamp(),
+  };
+  const docRef = await db
+    .collection('users').doc(uid)
+    .collection('requests').add(requestDoc);
+  logger.info(`Firestore document created for request: ${docRef.id}`);
+};
+
 const uploadToGemini = async (path, mimeType) => {
   const uploadResult = await fileManager.uploadFile(path, {
     mimeType,
@@ -94,7 +115,7 @@ app.post('/api/identifyPlant', async (req, res) => {
       res.status(400).json({ error: 'Missing required fields: mimeType, imageData' });
       return;
     }
-
+    
     const filename = randomUUID() + (
       mimeType === 'image/jpeg' ? '.jpeg' : 
       mimeType === 'image/png' ? '.png' : 
@@ -104,7 +125,9 @@ app.post('/api/identifyPlant', async (req, res) => {
 
     await fs.promises.writeFile(filePath, imageData, { encoding: 'base64' });
     logger.info(`File saved to ${filePath}`);
-    
+
+    const backgroundPromise = uploadToStorageAndFirestore(req.uid, filename, filePath, mimeType);
+
     const file = await uploadToGemini(filePath, mimeType);
     
     const result = await model.generateContent({
@@ -119,7 +142,9 @@ app.post('/api/identifyPlant', async (req, res) => {
       generationConfig,
     });
     const responseText = await result.response.text();
-    logger.info('Gemini AI response received',responseText);
+    logger.info('Gemini AI response received', responseText);
+
+    await backgroundPromise;
 
     res.status(200).json(JSON.parse(responseText));
   } catch (error) {
