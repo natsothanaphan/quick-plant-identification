@@ -1,4 +1,5 @@
 #root {
+  width: 100%;
   max-width: 960px;
   margin: 0 auto;
   text-align: center;
@@ -13,17 +14,31 @@
   min-height: 100vh;
 }
 
-.preview-img {
-  max-width: 280px;
-  margin: 12px 0;
+.submit-form {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+  gap: 8px;
 }
 
-.error-message {
-  color: firebrick;
+.submit-form > input {
+  width: 100%;
+  max-width: 360px;
+}
+
+.submit-form > img {
+  width: 100%;
+  max-width: 320px;
 }
 
 .result-container {
-  margin: 24px 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 4px 0;
 }
 
 .reset-button {
