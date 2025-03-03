@@ -30,7 +30,7 @@ const identifyPlant = async (token, { mimeType, imageData }) => {
     });
     if (!resp.ok) {
       const errData = await resp.json();
-      console.log('api identifyPlant error', { errData });
+      console.error('api identifyPlant error', { errData });
       throw new Error(errData.error || 'Failed api identifyPlant');
     }
     const data = await resp.json();
@@ -41,6 +41,60 @@ const identifyPlant = async (token, { mimeType, imageData }) => {
   }
 };
 
+const getHistory = async (token, day, timezone) => {
+  console.log('api getHistory start', { day, timezone });
+  try {
+    const resp = await fetch(`/api/history?day=${encodeURIComponent(day)}&timezone=${encodeURIComponent(timezone)}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!resp.ok) {
+      const errData = await resp.json();
+      console.error('api getHistory error', { errData });
+      throw new Error(errData.error || 'Failed api getHistory');
+    }
+    const data = await resp.json();
+    console.log('api getHistory done', { data });
+    return data;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const imageCache = new Map();
+
+const fetchImage = async (token, filename) => {
+  console.log('api fetchImage start', { filename });
+  if (imageCache.has(filename)) {
+    const imgURL = imageCache.get(filename);
+    console.log('api fetchImage cache hit', { imgURL });
+    return imgURL;
+  }
+  try {
+    const resp = await fetch(`/api/images/${filename}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!resp.ok) {
+      console.error('api fetchImage error');
+      throw new Error('Failed to fetch image');
+    }
+    const blob = await resp.blob();
+    const imgURL = URL.createObjectURL(blob);
+    console.log('api fetchImage done', { imgURL });
+    imageCache.set(filename, imgURL);
+    return imgURL;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export default {
   identifyPlant,
+  getHistory,
+  fetchImage,
 };

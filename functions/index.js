@@ -157,15 +157,23 @@ const docToData = (doc) => {
 
 app.get('/api/history', async (req, res) => {
   try {
-    const { day } = req.query;
+    const { day, timezone } = req.query;
     if (!day) return res.status(400).json({ error: 'Query parameter `day` is required in yyyy-mm-dd format' });
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return res.status(400).json({ error: 'Invalid day format. Use yyyy-mm-dd.' });
-    const startDate = new Date(day);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 1);
+    const targetDate = new Date(day);
+    if (isNaN(targetDate)) return res.status(400).json({ error: 'Invalid day format. Use yyyy-mm-dd.' });
+    if (!timezone) return res.status(400).json({ error: 'Query parameter `timezone` is required' });
+    const timezoneOffset = parseInt(timezone, 10);
+    if (isNaN(timezoneOffset)) return res.status(400).json({ error: 'Invalid timezone format. Use integer representing UTC offset in minutes.' });
+    const startTime = new Date(targetDate);
+    startTime.setMinutes(startTime.getMinutes() - timezoneOffset);
+    const endTime = new Date(startTime);
+    endTime.setDate(endTime.getDate() + 1);
+    logger.info(`startTime: ${startTime.toISOString()}, endTime: ${endTime.toISOString()}`);
+    
     const requestsRef = db.collection('users').doc(req.uid).collection('requests'); 
     const snapshot = await requestsRef.orderBy('createdAt', 'desc')
-      .where('createdAt', '>=', startDate).where('createdAt', '<', endDate).get();
+      .where('createdAt', '>=', startTime).where('createdAt', '<', endTime).get();
     const data = snapshot.docs.map(docToData);
     res.status(200).json(data);
   } catch (error) {

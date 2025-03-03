@@ -3,7 +3,7 @@ import './MainPage.css';
 import api from '../api.js';
 import { alertAndLogErr, convertFileToBase64 } from '../utils.js';
 
-const MainPage = ({ user }) => {
+const MainPage = ({ user, onGoToHistory }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -81,6 +81,7 @@ const MainPage = ({ user }) => {
       <p>✏️ Explanation—{result['4-userExplanation']}</p>
     </div>}
     <button onClick={handleReset} className='reset-button' title='Clear'>❌</button>
+    <button onClick={onGoToHistory} className='history-button'>History</button>
   </>;
 };
 
