@@ -5,42 +5,11 @@
   text-align: center;
 }
 
-.App {
+.app {
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-}
-
-.submit-form {
-  width: 100%;
-  max-width: 720px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 4px 0;
-  gap: 8px;
-}
-
-.submit-form > input {
-  width: 100%;
-  max-width: 360px;
-}
-
-.submit-form > img {
-  width: 100%;
-  max-width: 320px;
-}
-
-.result-container {
-  width: 100%;
-  max-width: 480px;
-  margin: 4px 0;
-}
-
-.reset-button {
-  margin: 16px 0;
 }
