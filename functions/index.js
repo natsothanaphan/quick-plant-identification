@@ -136,7 +136,7 @@ app.post('/api/identifyPlant', async (req, res) => {
     await updateFirestore(req.uid, docId, data);
     res.status(200).json(data);
   } catch (error) {
-    logger.error('Error in identifyPlant function:', error);
+    logger.error('Error in /api/identifyPlant:', error);
     res.status(500).json({ error: error.message });
   } finally {
     if (!filePath) return;
@@ -146,6 +146,50 @@ app.post('/api/identifyPlant', async (req, res) => {
     } catch (error) {
       logger.warn(`Failed to remove temporary file ${filePath}: ${error.message}`);
     }
+  }
+});
+
+const docToData = (doc) => {
+  const data = doc.data();
+  return { id: doc.id, ...data,
+    createdAt: data.createdAt.toDate(), updatedAt: data.updatedAt.toDate() };
+};
+
+app.get('/api/history', async (req, res) => {
+  try {
+    const { day } = req.query;
+    if (!day) return res.status(400).json({ error: 'Query parameter `day` is required in yyyy-mm-dd format' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return res.status(400).json({ error: 'Invalid day format. Use yyyy-mm-dd.' });
+    const startDate = new Date(day);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1);
+    const requestsRef = db.collection('users').doc(req.uid).collection('requests'); 
+    const snapshot = await requestsRef.orderBy('createdAt', 'desc')
+      .where('createdAt', '>=', startDate).where('createdAt', '<', endDate).get();
+    const data = snapshot.docs.map(docToData);
+    res.status(200).json(data);
+  } catch (error) {
+    logger.error('Error in /api/history:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/images/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const storagePath = `${req.uid}/images/${filename}`;
+    const bucket = storage.bucket();
+    const file = bucket.file(storagePath);
+    const [metadata] = await file.getMetadata();
+    const mimeType = metadata.contentType || 'application/octet-stream';
+    res.setHeader('Content-Type', mimeType);
+    file.createReadStream().on('error', (error) => {
+      logger.error(`Error reading file ${storagePath}:`, error);
+      res.status(500).send(error.message);
+    }).pipe(res);
+  } catch (error) {
+    logger.error('Error in /api/images/:filename:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
