@@ -16,26 +16,31 @@ const doMockError = () => new Promise((resolve, reject) => {
 });
 
 const identifyPlant = async (token, { mimeType, imageData }) => {
+  console.log('api identifyPlant start', { mimeType });
   // return await doMockSuccess();
   // return await doMockError();
   try {
     const resp = await fetch('/api/identifyPlant', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({ mimeType, imageData }),
     });
     if (!resp.ok) {
-      throw new Error(`Identify Plant API returned error: ${resp.status}`);
+      const errData = await resp.json();
+      console.log('api identifyPlant error', { errData });
+      throw new Error(errData.error || 'Failed api identifyPlant');
     }
     const data = await resp.json();
-    console.log('API response:', data);
+    console.log('api identifyPlant done', { data });
     return data;
-  } catch (error) {
-    throw new Error(`Identify Plant API call failed: ${error.message}`);
+  } catch (err) {
+    throw err;
   }
 };
 
-export default { identifyPlant };
+export default {
+  identifyPlant,
+};

@@ -78,33 +78,26 @@ const model = genAI.getGenerativeModel({
     'Identify a single plant in the image.\nOutput fields in this order: privateThinkingTrace, scientificName, commonNames, confidenceProb, userExplanation.',
 });
 
-const uploadToStorageAndFirestore = async (uid, filename, filePath, mimeType) => {
+const uploadToStorageAndFirestore = async (uid, filename, filePath) => {
   const bucket = storage.bucket();
   const storagePath = `${uid}/images/${filename}`;
   await bucket.upload(filePath, {
     destination: storagePath,
-    metadata: { contentType: mimeType },
   });
   logger.info(`File uploaded to Firebase Storage at ${storagePath}`);
-
   const requestDoc = { 
     filename: storagePath, 
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
   };
   const docRef = await db
     .collection('users').doc(uid)
     .collection('requests').add(requestDoc);
   logger.info(`Firestore document created for request: ${docRef.id}`);
-
   return docRef.id;
 };
 
 const uploadToGemini = async (path, mimeType) => {
-  const uploadResult = await fileManager.uploadFile(path, {
-    mimeType,
-    displayName: path,
-  });
+  const uploadResult = await fileManager.uploadFile(path, { mimeType, displayName: path });
   const file = uploadResult.file;
   logger.info(`Uploaded file ${file.displayName} as: ${file.name}`);
   return file;
@@ -125,42 +118,22 @@ app.post('/api/identifyPlant', async (req, res) => {
   let filePath = '';
   try {
     const { mimeType, imageData } = req.body;
-    if (!mimeType || !imageData) {
-      res.status(400).json({ error: 'Missing required fields: mimeType, imageData' });
-      return;
-    }
-    
-    const filename = randomUUID() + (
-      mimeType === 'image/jpeg' ? '.jpeg' : 
-      mimeType === 'image/png' ? '.png' : 
-      ''
-    );
+    if (!mimeType || !imageData) return res.status(400).json({ error: 'Missing required fields: mimeType, imageData' });
+    const filename = randomUUID() + (mimeType === 'image/jpeg' ? '.jpeg' : mimeType === 'image/png' ? '.png' : '');
     filePath = `/tmp/${filename}`;
-
     await fs.promises.writeFile(filePath, imageData, { encoding: 'base64' });
     logger.info(`File saved to ${filePath}`);
 
-    const backgroundPromise = uploadToStorageAndFirestore(req.uid, filename, filePath, mimeType);
-
+    const backgroundUploadTask = uploadToStorageAndFirestore(req.uid, filename, filePath);
     const file = await uploadToGemini(filePath, mimeType);
-    
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { fileData: { mimeType: file.mimeType, fileUri: file.uri } },
-          ],
-        },
-      ],
-      generationConfig,
-    });
+    const result = await model.generateContent( { generationConfig, contents: [ {
+        role: 'user',
+        parts: [ { fileData: { mimeType: file.mimeType, fileUri: file.uri } } ],
+    } ] } );
     const data = JSON.parse(await result.response.text());
     logger.info('Gemini AI response received', data);
-
-    const docId = await backgroundPromise;
+    const docId = await backgroundUploadTask;
     await updateFirestore(req.uid, docId, data);
-
     res.status(200).json(data);
   } catch (error) {
     logger.error('Error in identifyPlant function:', error);
