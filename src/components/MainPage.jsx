@@ -71,14 +71,14 @@ const MainPage = ({ user, onGoToHistory }) => {
         onChange={handleFileChange} />
       {selectedFile && <>
         {previewUrl && <img src={previewUrl} alt='Preview' />}
-        <button type='submit' title='Submit' disabled={loading}>{!loading ? '🧪' : 'Loading...'}</button>
+        <button type='submit' title='Submit' disabled={loading}>{!loading ? '🚀' : 'Loading...'}</button>
       </>}
     </form>
     {!loading && result && <div className='result-container'>
-      <p>🔬 Scientific name—<em>{result['1-scientificName']}</em></p>
-      <p>💬 Common names—{result['2-commonNames'].join('; ')}</p>
-      <p>❓ Confidence—{result['3-confidenceProb']}</p>
-      <p>✏️ Explanation—{result['4-userExplanation']}</p>
+      <pre>🔬 Scientific name—<em>{result['1-scientificName']}</em></pre>
+      <pre>💬 Common names—{result['2-commonNames'].join('; ')}</pre>
+      <pre>❓ Confidence—{result['3-confidenceProb']}</pre>
+      <pre>✏️ Explanation—{result['4-userExplanation']}</pre>
     </div>}
     <button onClick={handleReset} className='reset-button' title='Clear'>❌</button>
     <button onClick={onGoToHistory} className='history-button'>History</button>

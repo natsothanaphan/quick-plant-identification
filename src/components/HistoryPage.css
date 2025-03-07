@@ -49,3 +49,6 @@
   max-width: 480px;
   margin: 4px 0;
 }
+.result-container > pre {
+  white-space: pre-wrap;
+}

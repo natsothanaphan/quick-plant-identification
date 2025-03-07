@@ -68,10 +68,10 @@ const HistoryPage = ({ user, onBack }) => {
           {images[entry.id] && <img src={images[entry.id]} alt='History image' />}
           {!entry.result && <p>No result</p>}
           {entry.result && <div className='result-container'>
-            <p>🔬 Scientific name—<em>{entry.result['1-scientificName']}</em></p>
-            <p>💬 Common names—{entry.result['2-commonNames'].join('; ')}</p>
-            <p>❓ Confidence—{entry.result['3-confidenceProb']}</p>
-            <p>✏️ Explanation—{entry.result['4-userExplanation']}</p>
+            <pre>🔬 Scientific name—<em>{entry.result['1-scientificName']}</em></pre>
+            <pre>💬 Common names—{entry.result['2-commonNames'].join('; ')}</pre>
+            <pre>❓ Confidence—{entry.result['3-confidenceProb']}</pre>
+            <pre>✏️ Explanation—{entry.result['4-userExplanation']}</pre>
           </div>}
         </div>}
       </li>)}</ul>}
